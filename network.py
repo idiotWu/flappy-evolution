@@ -22,7 +22,7 @@ class NeuralNetwork:
 
 @dataclass
 class Genome:
-    fit: float
+    fitness: float
     nn: NeuralNetwork
 
     @staticmethod
@@ -41,7 +41,7 @@ class Genome:
 
         return a * multiplier
 
-    def breed(self, g2, mutation_rate):
+    def breed(self, g2: Genome, mutation_rate: float) -> Genome:
         maps = (
             (self.nn.w1, g2.nn.w1),
             (self.nn.b1, g2.nn.b1),
@@ -57,7 +57,7 @@ class Genome:
 
         nn = NeuralNetwork(*params)
 
-        return Genome(self.fit, nn)
+        return Genome(self.fitness, nn)
 
 
 class Generation:
@@ -69,7 +69,7 @@ class Generation:
         self.genomes = genomes
 
     def next(self, mutation_rate):
-        self.genomes.sort(key=lambda gen: gen.fit, reverse=True)
+        self.genomes.sort(key=lambda gen: gen.fitness, reverse=True)
         # best_genome = self.genomes[0]
         total_count = len(self.genomes)
         max_children = 7
@@ -91,4 +91,4 @@ class Generation:
 
     def select(self):
         g1, g2 = random.sample(self.genomes, 2)
-        return g1 if g1.fit > g2.fit else g2
+        return g1 if g1.fitness > g2.fitness else g2

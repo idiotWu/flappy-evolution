@@ -18,9 +18,9 @@ class GameAI(Game):
 
         for _ in range(bird_count):
             w1 = np.random.randn(2, hidden_nn)
-            b1 = np.zeros((1, hidden_nn))
+            b1 = np.random.randn(1, hidden_nn)
             w2 = np.random.randn(hidden_nn, 1)
-            b2 = np.zeros((1, 1))
+            b2 = np.random.randn(1, 1)
             nn = NeuralNetwork(w1, b1, w2, b2)
             genomes.append(Genome(0, nn))
 
@@ -49,11 +49,11 @@ class GameAI(Game):
             if not bird.alive:
                 continue
 
-            genome.fit = bird.score
+            genome.fitness = bird.score
 
             offset = bird.get_offset(self.frontier)
             out = genome.nn.forward(np.array(offset))
-            if out[0][0] > 0.5:
+            if out[0][0] > 0:
                 bird.flap()
 
     def render(self):

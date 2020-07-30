@@ -15,11 +15,11 @@ images = {
 }
 
 pygame.font.init()
-font = pygame.font.SysFont('monospace', 24)
+font = pygame.font.SysFont('Arial', 24)
 
 FPS = 60
 
-WIN_WIDTH, WIN_HEIGHT = 300, 400
+WIN_WIDTH, WIN_HEIGHT = 400, 400
 GND_HEIGHT = 60
 MOVE_SPEED = 2
 
@@ -73,7 +73,7 @@ class Bird(BaseSprite):
     def check_alive(self, pipe_pair: PipePair) -> bool:
         if not self.alive:
             return False
-        self.alive = self.y > -50 and \
+        self.alive = self.y > -self.height and \
                      self.y + self.height < WIN_HEIGHT - GND_HEIGHT and \
                      not self.collide(pipe_pair)
         return self.alive
