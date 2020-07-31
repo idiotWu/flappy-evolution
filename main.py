@@ -58,11 +58,11 @@ class GameAI(Game):
 
     def render(self):
         super().render()
-        self.draw_text(f'Speed: {self.fast_forward}x', 10, 10)
-        self.draw_text(f'Score: {self.score}', 10, 30)
-        self.draw_text(f'Max Score: {self.max_score}', 10, 50)
-        self.draw_text(f'Generation: {self.generation.id}', 10, 70)
-        self.draw_text(f'Alive: {self.remain_birds}/{bird_count}', 10, 90)
+        self.draw_text(f'SPEED: {self.fast_forward}X', 10, 10)
+        self.draw_text(f'SCORE: {self.score}', 10, 35)
+        self.draw_text(f'HIGH SCORE: {self.max_score}', 10, 60)
+        self.draw_text(f'GENERATION: {self.generation.id}', 10, 85)
+        self.draw_text(f'ALIVE: {self.remain_birds}/{bird_count}', 10, 110)
 
 
 if __name__ == '__main__':
