@@ -15,13 +15,13 @@ images = {
 }
 
 pygame.font.init()
-font = pygame.font.SysFont('Arial', 24)
+font = pygame.font.SysFont('arialttf, arial', 20)
 
 FPS = 60
 
-WIN_WIDTH, WIN_HEIGHT = 400, 400
+WIN_WIDTH, WIN_HEIGHT = 400, 500
 GND_HEIGHT = 60
-MOVE_SPEED = 2
+MOVE_SPEED = 3
 
 
 class BaseSprite(ABC):
