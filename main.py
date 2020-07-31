@@ -1,45 +1,49 @@
 import numpy as np
+from functools import reduce
 
 from game import Game
 from network import *
 
 bird_count = 50
 hidden_nn = 3
+nn_input_dim = 3
+nn_output_dim = 1
+
 mutation_rate = 0.1
 
 
 class GameAI(Game):
     generation: Generation
-    remain_birds: int
+    # fast_forward = 404
 
     def __init__(self):
         super().__init__(bird_count)
         genomes = []
 
         for _ in range(bird_count):
-            w1 = np.random.randn(2, hidden_nn)
+            w1 = np.random.randn(nn_input_dim, hidden_nn)
             b1 = np.random.randn(hidden_nn)
-            w2 = np.random.randn(hidden_nn, 1)
-            b2 = np.random.randn(1)
+            w2 = np.random.randn(hidden_nn, nn_output_dim)
+            b2 = np.random.randn(nn_output_dim)
             nn = NeuralNetwork(w1, b1, w2, b2)
             genomes.append(Genome(nn))
 
         self.generation = Generation(genomes)
 
-    def calc_remain(self):
-        count = 0
-        for bird in self.birds:
-            if bird.alive:
-                count += 1
-        self.remain_birds = count
+    def print_log(self):
+        avg_score = reduce(
+            lambda f1, f2: f1 + f2,
+            (g.fitness for g in self.generation.genomes)
+        ) / bird_count
+        print(f'Gen: {self.generation.id}, Avg: {avg_score}, Max: {self.score}')
 
     def update(self):
         super().update()
-        self.calc_remain()
 
         if self.remain_birds == 0:
-            self.reset()
+            self.print_log()
             self.generation = self.generation.next(mutation_rate)
+            self.reset()
             return
 
         for i, genome in enumerate(self.generation.genomes):
@@ -49,8 +53,10 @@ class GameAI(Game):
                 continue
 
             genome.fitness = bird.score
-            offset = bird.get_offset(self.frontier)
-            out = genome.nn.forward(np.array(offset))
+            x, y = bird.get_offset(self.frontier)
+            out = genome.nn.forward(
+                np.array([self.frontier.move_v, x, y])
+            )
             if out[0] >= 0:
                 bird.flap()
 

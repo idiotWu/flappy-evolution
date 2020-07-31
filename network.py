@@ -73,6 +73,9 @@ class Generation:
         total_count = len(self.genomes)
         max_children = 10
 
+        # new_genomes = [
+        #     g.breed(g, mutation_rate) for g in self.genomes[:10]
+        # ]
         new_genomes = []
 
         for g in self.genomes:

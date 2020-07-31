@@ -18,16 +18,16 @@ pygame.font.init()
 font = pygame.font.SysFont('arialttf, arial', 20)
 
 FPS = 60
-MAX_FAST_FORWARD = 100
 
 WIN_WIDTH, WIN_HEIGHT = 400, 500
 GND_HEIGHT = 60
-GAP_HEIGHT = 100
-MIN_PIPE_HEIGHT = 20
+GAP_HEIGHT = 150
+MIN_PIPE_HEIGHT = 30
 
-PIPE_V = 3
+GND_V = 3
+MAX_PIPE_V = 3
 FLAP_V = -8
-DELTA_V = 0.5
+DELTA_V = 0.6
 
 
 class BaseSprite(ABC):
@@ -102,16 +102,8 @@ class Bird(BaseSprite):
            self.left > pipe_pair.right:
             return False
 
-        top = pipe_pair.top_pipe
-        bottom = pipe_pair.bottom_pipe
-        bird_mask = self.get_mask()
-        top_mask = top.get_mask()
-        bottom_mask = bottom.get_mask()
-        top_offset = (int(top.x - self.x), int(top.y - self.y))
-        bottom_offset = (int(bottom.x - self.x), int(bottom.y - self.y))
-
-        return bird_mask.overlap(top_mask, top_offset) or \
-               bird_mask.overlap(bottom_mask, bottom_offset)
+        return self.top <= pipe_pair.top_pipe.bottom or \
+               self.bottom >= pipe_pair.bottom_pipe.top
 
     def update(self):
         self.y += self.v
@@ -137,7 +129,7 @@ class Ground(BaseSprite):
         self.y = WIN_HEIGHT - GND_HEIGHT
 
     def update(self):
-        self.x = self.x - PIPE_V
+        self.x = self.x - GND_V
         if self.x <= -self.width:
             self.x = 0
 
@@ -157,7 +149,7 @@ class Pipe(BaseSprite):
             self.image = pygame.transform.flip(self.image, False, True)
 
     def update(self):
-        self.x -= PIPE_V
+        self.x -= GND_V
 
     def render(self, surface: pygame.Surface):
         surface.blit(self.image, (self.x, self.y))
@@ -166,6 +158,7 @@ class Pipe(BaseSprite):
 class PipePair:
     top_pipe: Pipe
     bottom_pipe: Pipe
+    move_v: int
 
     @property
     def x(self) -> float:
@@ -198,8 +191,24 @@ class PipePair:
         self.bottom_pipe = Pipe(x, bottom_y)
         top_y = bottom_y - GAP_HEIGHT - self.bottom_pipe.height
         self.top_pipe = Pipe(x, top_y, True)
+        self.move_v = random.randint(1, MAX_PIPE_V)
+
+    def move(self):
+        if self.move_v > 0:
+            if self.bottom_pipe.top < WIN_HEIGHT - GND_HEIGHT - MIN_PIPE_HEIGHT:
+                self.bottom_pipe.y += self.move_v
+                self.top_pipe.y += self.move_v
+            else:
+                self.move_v *= -1
+        else:
+            if self.top_pipe.bottom > MIN_PIPE_HEIGHT:
+                self.bottom_pipe.y += self.move_v
+                self.top_pipe.y += self.move_v
+            else:
+                self.move_v *= -1
 
     def update(self):
+        self.move()
         self.bottom_pipe.update()
         self.top_pipe.update()
 
@@ -229,10 +238,11 @@ class Game:
     frontier: PipePair
 
     bird_count: int
+    remain_birds: int
 
     def __init__(self, bird_count=50):
         pygame.display.set_caption('Flappy Bird')
-        self.bird_count = bird_count
+        self.bird_count = self.remain_birds = bird_count
         self.reset()
 
     def reset(self):
@@ -241,6 +251,13 @@ class Game:
         self.birds = [Bird() for _ in range(self.bird_count)]
         self.ground = Ground()
         self.frontier = self.pipes[0]
+
+    def calc_remain(self):
+        count = 0
+        for bird in self.birds:
+            if bird.alive:
+                count += 1
+        self.remain_birds = count
 
     def flush_pipes(self):
         if self.frontier.right <= self.birds[0].left:
@@ -256,12 +273,13 @@ class Game:
         self.max_score = max(self.max_score, self.score)
         for pipe in self.pipes:
             pipe.update()
+        self.flush_pipes()
         for bird in self.birds:
             if bird.check_alive(self.frontier):
                 bird.score = self.score
                 bird.update()
+        self.calc_remain()
         self.ground.update()
-        self.flush_pipes()
 
     def render(self):
         surface = self.screen
@@ -278,8 +296,7 @@ class Game:
         self.screen.blit(img, (x, y))
 
     def change_speed(self, delta: int):
-        ff = self.fast_forward + delta
-        self.fast_forward = min(MAX_FAST_FORWARD, max(1, ff))
+        self.fast_forward = max(1, self.fast_forward + delta)
 
     def start(self):
         pygame.key.set_repeat(100, 100)
@@ -292,11 +309,13 @@ class Game:
                     if evt.key == pygame.K_UP:
                         self.change_speed(1)
                     elif evt.key == pygame.K_RIGHT:
-                        self.change_speed(5)
+                        self.change_speed(10)
                     elif evt.key == pygame.K_DOWN:
                         self.change_speed(-1)
                     elif evt.key == pygame.K_LEFT:
-                        self.change_speed(-5)
+                        self.change_speed(-10)
+                    elif evt.key == pygame.K_ESCAPE:
+                        self.fast_forward = 1
 
             for _ in range(self.fast_forward):
                 self.update()
