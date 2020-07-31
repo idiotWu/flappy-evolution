@@ -62,7 +62,7 @@ class GameAI(Game):
         self.draw_text(f'SCORE: {self.score}', 10, 35)
         self.draw_text(f'HIGH SCORE: {self.max_score}', 10, 60)
         self.draw_text(f'GENERATION: {self.generation.id}', 10, 85)
-        self.draw_text(f'ALIVE: {self.remain_birds}/{bird_count}', 10, 110)
+        self.draw_text(f'ALIVE: {self.remain_birds} / {bird_count}', 10, 110)
 
 
 if __name__ == '__main__':

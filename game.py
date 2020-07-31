@@ -31,6 +31,22 @@ class BaseSprite(ABC):
     x: float
     y: float
 
+    @property
+    def left(self):
+        return self.x
+
+    @property
+    def right(self):
+        return self.x + self.width
+
+    @property
+    def top(self):
+        return self.y
+
+    @property
+    def bottom(self):
+        return self.y + self.height
+
     def __init__(self, img_src: str):
         self.x = self.y = 0
         self.image = pygame.image.load(img_src).convert_alpha()
@@ -79,6 +95,10 @@ class Bird(BaseSprite):
         return self.alive
 
     def collide(self, pipe_pair: PipePair):
+        if self.right < pipe_pair.left or \
+           self.left > pipe_pair.right:
+            return False
+
         top = pipe_pair.top
         bottom = pipe_pair.bottom
         bird_mask = self.get_mask()
@@ -148,8 +168,12 @@ class PipePair:
         return self.top.x
 
     @property
-    def x_max(self) -> float:
-        return self.top.x + self.width
+    def left(self) -> float:
+        return self.x
+
+    @property
+    def right(self) -> float:
+        return self.x + self.width
 
     @property
     def midpoint(self) -> Tuple[float, float]:
@@ -213,12 +237,12 @@ class Game:
         self.frontier = self.pipes[0]
 
     def flush_pipes(self):
-        if self.frontier.x_max <= self.birds[0].x:
+        if self.frontier.right <= self.birds[0].left:
             pipe = PipePair(WIN_WIDTH)
             self.pipes.append(pipe)
             self.frontier = pipe
 
-        if self.pipes[0].x_max <= 0:
+        if self.pipes[0].right <= 0:
             self.pipes.pop(0)
 
     def update(self):
