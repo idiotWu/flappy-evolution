@@ -178,9 +178,10 @@ class PipePair:
         self.top.render(surface)
 
 
-# noinspection PyAttributeOutsideInit
 class Game:
-    screen: pygame.Surface = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+    screen: pygame.Surface = pygame.display.set_mode(
+        (WIN_WIDTH, WIN_HEIGHT)
+    )
 
     bg_img: pygame.Surface = pygame.transform.scale(
         pygame.image.load(images['bg']).convert_alpha(),

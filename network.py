@@ -22,8 +22,8 @@ class NeuralNetwork:
 
 @dataclass
 class Genome:
-    fitness: float
     nn: NeuralNetwork
+    fitness: float = 0
 
     @staticmethod
     def crossover(a: np.ndarray, b: np.ndarray):
@@ -57,7 +57,7 @@ class Genome:
 
         nn = NeuralNetwork(*params)
 
-        return Genome(self.fitness, nn)
+        return Genome(nn)
 
 
 class Generation:
@@ -72,7 +72,7 @@ class Generation:
         self.genomes.sort(key=lambda gen: gen.fitness, reverse=True)
         # best_genome = self.genomes[0]
         total_count = len(self.genomes)
-        max_children = 7
+        max_children = 10
 
         new_genomes = []
 

@@ -22,7 +22,7 @@ class GameAI(Game):
             w2 = np.random.randn(hidden_nn, 1)
             b2 = np.random.randn(1, 1)
             nn = NeuralNetwork(w1, b1, w2, b2)
-            genomes.append(Genome(0, nn))
+            genomes.append(Genome(nn))
 
         self.generation = Generation(genomes)
 
