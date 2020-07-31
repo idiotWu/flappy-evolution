@@ -18,10 +18,16 @@ pygame.font.init()
 font = pygame.font.SysFont('arialttf, arial', 20)
 
 FPS = 60
+MAX_FAST_FORWARD = 100
 
 WIN_WIDTH, WIN_HEIGHT = 400, 500
 GND_HEIGHT = 60
-MOVE_SPEED = 3
+GAP_HEIGHT = 100
+MIN_PIPE_HEIGHT = 20
+
+PIPE_V = 3
+FLAP_V = -8
+DELTA_V = 0.5
 
 
 class BaseSprite(ABC):
@@ -69,9 +75,6 @@ class BaseSprite(ABC):
 
 
 class Bird(BaseSprite):
-    FLAP_V = -8
-    DELTA_V = 0.5
-
     v: float = 0
     alive: bool = True
     score: int
@@ -84,7 +87,7 @@ class Bird(BaseSprite):
         self.y = (WIN_HEIGHT - rect.height) / 2
 
     def flap(self):
-        self.v = self.FLAP_V
+        self.v = FLAP_V
 
     def check_alive(self, pipe_pair: PipePair) -> bool:
         if not self.alive:
@@ -99,8 +102,8 @@ class Bird(BaseSprite):
            self.left > pipe_pair.right:
             return False
 
-        top = pipe_pair.top
-        bottom = pipe_pair.bottom
+        top = pipe_pair.top_pipe
+        bottom = pipe_pair.bottom_pipe
         bird_mask = self.get_mask()
         top_mask = top.get_mask()
         bottom_mask = bottom.get_mask()
@@ -112,18 +115,18 @@ class Bird(BaseSprite):
 
     def update(self):
         self.y += self.v
-        self.v += self.DELTA_V
+        self.v += DELTA_V
 
     def render(self, surface: pygame.Surface):
-        angle = min(self.v / self.FLAP_V * 45, 90)
+        angle = min(self.v / FLAP_V * 45, 90)
         rot_img = pygame.transform.rotate(self.image, angle)
         rot_rect = rot_img.get_rect(center=self.get_rect().center)
         surface.blit(rot_img, rot_rect)
 
     def get_offset(self, pipe_pair: PipePair) -> Tuple[float, float]:
-        midpoint = pipe_pair.midpoint
-        x = (midpoint[0] - self.x) / WIN_WIDTH
-        y = (midpoint[1] - self.y) / WIN_HEIGHT
+        mid_x, mid_y = pipe_pair.midpoint
+        x = (mid_x - self.x) / WIN_WIDTH
+        y = (mid_y - self.y) / WIN_HEIGHT
         return x, y
 
 
@@ -134,7 +137,7 @@ class Ground(BaseSprite):
         self.y = WIN_HEIGHT - GND_HEIGHT
 
     def update(self):
-        self.x = self.x - MOVE_SPEED
+        self.x = self.x - PIPE_V
         if self.x <= -self.width:
             self.x = 0
 
@@ -154,18 +157,23 @@ class Pipe(BaseSprite):
             self.image = pygame.transform.flip(self.image, False, True)
 
     def update(self):
-        self.x -= MOVE_SPEED
+        self.x -= PIPE_V
 
     def render(self, surface: pygame.Surface):
         surface.blit(self.image, (self.x, self.y))
 
 
 class PipePair:
-    GAP_HEIGHT = 100
+    top_pipe: Pipe
+    bottom_pipe: Pipe
 
     @property
     def x(self) -> float:
-        return self.top.x
+        return self.top_pipe.x
+
+    @property
+    def width(self) -> int:
+        return self.top_pipe.width
 
     @property
     def left(self) -> float:
@@ -177,29 +185,27 @@ class PipePair:
 
     @property
     def midpoint(self) -> Tuple[float, float]:
-        return self.x + self.width / 2, \
-               (self.top.y + self.bottom.y) / 2
+        return (
+            self.x + self.width / 2,
+            (self.top_pipe.bottom + self.bottom_pipe.top) / 2
+        )
 
     def __init__(self, x: float):
         bottom_y = random.randint(
-            self.GAP_HEIGHT + 20,
-            WIN_HEIGHT - GND_HEIGHT - 20
+            GAP_HEIGHT + MIN_PIPE_HEIGHT,
+            WIN_HEIGHT - GND_HEIGHT - MIN_PIPE_HEIGHT
         )
-        self.bottom = Pipe(x, bottom_y)
-        self.top = Pipe(
-            x, bottom_y - self.GAP_HEIGHT - self.bottom.height,
-            True
-        )
-        self.width = self.top.width
-        self.height = self.top.height
+        self.bottom_pipe = Pipe(x, bottom_y)
+        top_y = bottom_y - GAP_HEIGHT - self.bottom_pipe.height
+        self.top_pipe = Pipe(x, top_y, True)
 
     def update(self):
-        self.bottom.update()
-        self.top.update()
+        self.bottom_pipe.update()
+        self.top_pipe.update()
 
     def render(self, surface: pygame.Surface):
-        self.bottom.render(surface)
-        self.top.render(surface)
+        self.bottom_pipe.render(surface)
+        self.top_pipe.render(surface)
 
 
 class Game:
@@ -273,7 +279,7 @@ class Game:
 
     def change_speed(self, delta: int):
         ff = self.fast_forward + delta
-        self.fast_forward = min(10, max(1, ff))
+        self.fast_forward = min(MAX_FAST_FORWARD, max(1, ff))
 
     def start(self):
         pygame.key.set_repeat(100, 100)
@@ -285,8 +291,12 @@ class Game:
                 if evt.type == pygame.KEYDOWN:
                     if evt.key == pygame.K_UP:
                         self.change_speed(1)
-                    if evt.key == pygame.K_DOWN:
+                    elif evt.key == pygame.K_RIGHT:
+                        self.change_speed(5)
+                    elif evt.key == pygame.K_DOWN:
                         self.change_speed(-1)
+                    elif evt.key == pygame.K_LEFT:
+                        self.change_speed(-5)
 
             for _ in range(self.fast_forward):
                 self.update()
