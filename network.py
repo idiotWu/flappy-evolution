@@ -16,7 +16,6 @@ class NeuralNetwork:
     def forward(self, x: np.ndarray) -> np.ndarray:
         z1 = np.tanh(x.dot(self.w1) + self.b1)
         z2 = np.tanh(z1.dot(self.w2) + self.b2)
-
         return z2
 
 
@@ -46,7 +45,7 @@ class Genome:
             (self.nn.w1, g2.nn.w1),
             (self.nn.b1, g2.nn.b1),
             (self.nn.w2, g2.nn.w2),
-            (self.nn.b2, g2.nn.b2)
+            (self.nn.b2, g2.nn.b2),
         )
 
         params = []
@@ -79,16 +78,9 @@ class Generation:
         for g in self.genomes:
             for _ in range(max_children):
                 g2 = self.genomes[random.randrange(total_count)]
-                new_genomes.append(
-                    g.breed(g2, mutation_rate)
-                )
-
+                new_genomes.append(g.breed(g2, mutation_rate))
                 if len(new_genomes) == total_count:
                     return Generation(new_genomes)
 
             if max_children > 1:
                 max_children -= 1
-
-    def select(self):
-        g1, g2 = random.sample(self.genomes, 2)
-        return g1 if g1.fitness > g2.fitness else g2

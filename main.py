@@ -18,9 +18,9 @@ class GameAI(Game):
 
         for _ in range(bird_count):
             w1 = np.random.randn(2, hidden_nn)
-            b1 = np.random.randn(1, hidden_nn)
+            b1 = np.random.randn(hidden_nn)
             w2 = np.random.randn(hidden_nn, 1)
-            b2 = np.random.randn(1, 1)
+            b2 = np.random.randn(1)
             nn = NeuralNetwork(w1, b1, w2, b2)
             genomes.append(Genome(nn))
 
@@ -35,7 +35,6 @@ class GameAI(Game):
 
     def update(self):
         super().update()
-
         self.calc_remain()
 
         if self.remain_birds == 0:
@@ -50,15 +49,14 @@ class GameAI(Game):
                 continue
 
             genome.fitness = bird.score
-
             offset = bird.get_offset(self.frontier)
             out = genome.nn.forward(np.array(offset))
-            if out[0][0] > 0:
+            if out[0] >= 0:
                 bird.flap()
 
     def render(self):
         super().render()
-        self.draw_text(f'SPEED: {self.fast_forward}X', 10, 10)
+        self.draw_text(f'SPEED: {self.fast_forward}x', 10, 10)
         self.draw_text(f'SCORE: {self.score}', 10, 35)
         self.draw_text(f'HIGH SCORE: {self.max_score}', 10, 60)
         self.draw_text(f'GENERATION: {self.generation.id}', 10, 85)
