@@ -21,11 +21,11 @@ FPS = 60
 
 WIN_WIDTH, WIN_HEIGHT = 400, 500
 GND_HEIGHT = 60
-GAP_HEIGHT = 150
+GAP_HEIGHT = 125
 MIN_PIPE_HEIGHT = 30
 
 GND_V = 3
-MAX_PIPE_V = 3
+MAX_PIPE_V = 2
 FLAP_V = -8
 DELTA_V = 0.6
 
@@ -115,7 +115,7 @@ class Bird(BaseSprite):
         rot_rect = rot_img.get_rect(center=self.get_rect().center)
         surface.blit(rot_img, rot_rect)
 
-    def get_offset(self, pipe_pair: PipePair) -> Tuple[float, float]:
+    def normalize_offset(self, pipe_pair: PipePair) -> Tuple[float, float]:
         mid_x, mid_y = pipe_pair.midpoint
         x = (mid_x - self.x) / WIN_WIDTH
         y = (mid_y - self.y) / WIN_HEIGHT
@@ -158,7 +158,7 @@ class Pipe(BaseSprite):
 class PipePair:
     top_pipe: Pipe
     bottom_pipe: Pipe
-    move_v: int
+    v: float
 
     @property
     def x(self) -> float:
@@ -191,21 +191,21 @@ class PipePair:
         self.bottom_pipe = Pipe(x, bottom_y)
         top_y = bottom_y - GAP_HEIGHT - self.bottom_pipe.height
         self.top_pipe = Pipe(x, top_y, True)
-        self.move_v = random.randint(1, MAX_PIPE_V)
+        self.v = random.uniform(0, MAX_PIPE_V)
 
     def move(self):
-        if self.move_v > 0:
+        if self.v > 0:
             if self.bottom_pipe.top < WIN_HEIGHT - GND_HEIGHT - MIN_PIPE_HEIGHT:
-                self.bottom_pipe.y += self.move_v
-                self.top_pipe.y += self.move_v
+                self.bottom_pipe.y += self.v
+                self.top_pipe.y += self.v
             else:
-                self.move_v *= -1
+                self.v *= -1
         else:
             if self.top_pipe.bottom > MIN_PIPE_HEIGHT:
-                self.bottom_pipe.y += self.move_v
-                self.top_pipe.y += self.move_v
+                self.bottom_pipe.y += self.v
+                self.top_pipe.y += self.v
             else:
-                self.move_v *= -1
+                self.v *= -1
 
     def update(self):
         self.move()
@@ -215,6 +215,9 @@ class PipePair:
     def render(self, surface: pygame.Surface):
         self.bottom_pipe.render(surface)
         self.top_pipe.render(surface)
+
+    def normalize_v(self):
+        return self.v / MAX_PIPE_V if MAX_PIPE_V else 1
 
 
 class Game:
@@ -240,7 +243,7 @@ class Game:
     bird_count: int
     remain_birds: int
 
-    def __init__(self, bird_count=50):
+    def __init__(self, bird_count=1):
         pygame.display.set_caption('Flappy Bird')
         self.bird_count = self.remain_birds = bird_count
         self.reset()

@@ -26,6 +26,7 @@ class Genome:
 
     @staticmethod
     def crossover(a: np.ndarray, b: np.ndarray):
+        # return 0.5 * (a + b)
         mask = np.random.uniform(size=a.shape)
         return np.where(mask <= 0.5, a, b)
 
@@ -74,7 +75,7 @@ class Generation:
         max_children = 10
 
         # new_genomes = [
-        #     g.breed(g, mutation_rate) for g in self.genomes[:10]
+        #     g.breed(g, 0) for g in self.genomes[:10]
         # ]
         new_genomes = []
 

@@ -2,11 +2,12 @@ import numpy as np
 from functools import reduce
 
 from game import Game
-from network import *
+from network import NeuralNetwork, Genome, Generation
 
 bird_count = 50
-hidden_nn = 3
+
 nn_input_dim = 3
+nn_hidden_dim = 3
 nn_output_dim = 1
 
 mutation_rate = 0.1
@@ -14,16 +15,16 @@ mutation_rate = 0.1
 
 class GameAI(Game):
     generation: Generation
-    # fast_forward = 404
+    fast_forward = 102400
 
     def __init__(self):
         super().__init__(bird_count)
         genomes = []
 
         for _ in range(bird_count):
-            w1 = np.random.randn(nn_input_dim, hidden_nn)
-            b1 = np.random.randn(hidden_nn)
-            w2 = np.random.randn(hidden_nn, nn_output_dim)
+            w1 = np.random.randn(nn_input_dim, nn_hidden_dim)
+            b1 = np.random.randn(nn_hidden_dim)
+            w2 = np.random.randn(nn_hidden_dim, nn_output_dim)
             b2 = np.random.randn(nn_output_dim)
             nn = NeuralNetwork(w1, b1, w2, b2)
             genomes.append(Genome(nn))
@@ -31,11 +32,20 @@ class GameAI(Game):
         self.generation = Generation(genomes)
 
     def print_log(self):
-        avg_score = reduce(
-            lambda f1, f2: f1 + f2,
-            (g.fitness for g in self.generation.genomes)
-        ) / bird_count
-        print(f'Gen: {self.generation.id}, Avg: {avg_score}, Max: {self.score}')
+        fit = [g.fitness for g in self.generation.genomes]
+        fit.sort()
+
+        avg_score = reduce(lambda f1, f2: f1 + f2, fit) / bird_count
+
+        print('Gen: {}, Mean: {:.2f}, Min: {}, Median: {}, Max: {}, 1e3+: {}, 1e4+: {}'.format(
+            self.generation.id,
+            avg_score,
+            fit[0],
+            fit[bird_count // 2],
+            fit[-1],
+            len([f for f in fit if f > 1e3]),
+            len([f for f in fit if f > 1e4])
+        ))
 
     def update(self):
         super().update()
@@ -53,10 +63,9 @@ class GameAI(Game):
                 continue
 
             genome.fitness = bird.score
-            x, y = bird.get_offset(self.frontier)
-            out = genome.nn.forward(
-                np.array([self.frontier.move_v, x, y])
-            )
+            x, y = bird.normalize_offset(self.frontier)
+            pipe_v = self.frontier.normalize_v()
+            out = genome.nn.forward(np.array([x, y, pipe_v]))
             if out[0] >= 0:
                 bird.flap()
 
