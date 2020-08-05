@@ -4,23 +4,29 @@ from functools import reduce
 from game import Game
 from network import NeuralNetwork, Genome, Generation
 
+# 小鳥の数（＝ ニューラルネットワーク数）
 bird_count = 50
 
+# ニューラルネットワークで各層の次元数
 nn_input_dim = 3
 nn_hidden_dim = 3
 nn_output_dim = 1
 
+# 子個体の変異率
 mutation_rate = 0.1
 
 
 class GameAI(Game):
+    # 世代情報
     generation: Generation
-    fast_forward = 102400
+    # 早送りの倍数
+    # fast_forward = 1024
 
     def __init__(self):
         super().__init__(bird_count)
         genomes = []
 
+        # 最初世代のパラメータはランダム的に生成する
         for _ in range(bird_count):
             w1 = np.random.randn(nn_input_dim, nn_hidden_dim)
             b1 = np.random.randn(nn_hidden_dim)
@@ -32,6 +38,7 @@ class GameAI(Game):
         self.generation = Generation(genomes)
 
     def print_log(self):
+        """今世代における学習の結果を出力する"""
         fit = [g.fitness for g in self.generation.genomes]
         fit.sort()
 
@@ -48,8 +55,10 @@ class GameAI(Game):
         ))
 
     def update(self):
+        """ゲームフレームの更新"""
         super().update()
 
+        # 生存者がなければ次の世代を生成する
         if self.remain_birds == 0:
             self.print_log()
             self.generation = self.generation.next(mutation_rate)
@@ -62,14 +71,19 @@ class GameAI(Game):
             if not bird.alive:
                 continue
 
+            # 個体の適応度を記録する
             genome.fitness = bird.score
+            # ネットワークのパラメータ
             x, y = bird.normalize_offset(self.frontier)
             pipe_v = self.frontier.normalize_v()
+            # ネットワークの出力
             out = genome.nn.forward(np.array([x, y, pipe_v]))
+            # 出力が 0 以上ならば小鳥を飛ばす
             if out[0] >= 0:
                 bird.flap()
 
     def render(self):
+        """情報を描画する"""
         super().render()
         self.draw_text(f'SPEED: {self.fast_forward}x', 10, 10)
         self.draw_text(f'SCORE: {self.score}', 10, 35)
